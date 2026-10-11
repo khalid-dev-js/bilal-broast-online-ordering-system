@@ -43,6 +43,7 @@ type SavedOrder = {
   orderNumber?: string
   items?: OrderItem[]
   grandTotal?: number
+  deliveryCharges?: number
   createdAt?: string
   orderStatus?: string
   customerName?: string
@@ -58,19 +59,20 @@ function escapeHtml(value: string) {
   })[character] || character)
 }
 
-function receiptHtml(order: SavedOrder, customer: Customer, payment: string) {
+function receiptHtml(order: SavedOrder, customer: Customer, payment: string, deliveryCharges: number) {
   const createdAt = order.createdAt ? new Date(order.createdAt) : new Date()
   const items = order.items || []
   const subtotal = items.reduce((sum, item) => sum + Number(item.lineTotal ?? Number(item.priceSnapshot || 0) * Number(item.quantity || 0)), 0)
+  const totalDue = Number(order.grandTotal ?? subtotal) + deliveryCharges
   const rows = items.map((item) => `<tr><td>${escapeHtml(item.nameSnapshot || 'Item')}</td><td class="qty">x${Number(item.quantity || 0)}</td><td class="price">${Number(item.lineTotal ?? Number(item.priceSnapshot || 0) * Number(item.quantity || 0)).toLocaleString('en-PK')}</td></tr>`).join('')
   return `<!doctype html><html><head><meta charset="utf-8"><title>Order ${escapeHtml(order.orderNumber || '')}</title><style>
-    @page{size:58mm auto;margin:0}*{box-sizing:border-box}html,body{width:58mm;margin:0;background:#fff;color:#111;font:10px Arial,sans-serif}.receipt{width:50mm;margin:0 auto;padding:4mm 1mm 6mm}.logo{display:block;width:44mm;max-height:27mm;object-fit:contain;margin:0 auto 3mm}.rule{border-top:1px solid #111;margin:2.5mm 0}.meta{line-height:1.55;overflow-wrap:anywhere}.meta strong{font-size:12px}table{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:700}th,td{padding:1.5mm 0;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{font-size:9px}th:first-child,td:first-child{width:43%;padding-right:1mm;font-size:9px}th:nth-child(2),td.qty{width:17%;text-align:center;white-space:nowrap}th:last-child,td.price{width:40%;padding-right:32px;text-align:right;white-space:nowrap}.totals{line-height:1.6;font-weight:700}.grand{font-size:12px;font-weight:900}.thanks{margin-top:4mm;text-align:center;font-weight:700;line-height:1.5}
-  </style></head><body><main class="receipt"><img class="logo" src="${window.location.origin}/bilal-broast-logo.png" alt="Bilal Broast"><div class="rule"></div><div class="meta"><strong>Online Order</strong><br>Order #: ${escapeHtml(order.orderNumber || order._id || '')}<br>Date: ${createdAt.toLocaleDateString('en-GB')} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}<br>Customer: ${escapeHtml(customer.name)}<br>Contact: ${escapeHtml(customer.phone)}<br>Address: ${escapeHtml(customer.address)}<br>Payment: ${escapeHtml(payment)}</div><div class="rule"></div><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead><tbody>${rows}</tbody></table><div class="rule"></div><div class="totals">Subtotal: ${subtotal.toLocaleString('en-PK', { maximumFractionDigits: 2 })}<div class="grand">Total Due: ${Number(order.grandTotal ?? subtotal).toLocaleString('en-PK', { maximumFractionDigits: 2 })}</div></div><div class="rule"></div><div class="thanks">Thank You For Choosing Bilal Broast<br>Visit Again!</div></main></body></html>`
+    @page{size:58mm auto;margin:0}*{box-sizing:border-box}html,body{width:58mm;margin:0;background:#fff;color:#111;font:10px Arial,sans-serif}.receipt{width:50mm;margin:0 auto;padding:4mm 1mm 6mm}.logo{display:block;width:44mm;max-height:27mm;object-fit:contain;margin:0 auto 1mm}.store-info{text-align:center;font-size:9px;line-height:1.45;margin-bottom:3mm}.store-phone{font-weight:700;letter-spacing:.2px}.rule{border-top:1px solid #111;margin:2.5mm 0}.meta{line-height:1.55;overflow-wrap:anywhere}.meta strong{font-size:12px}table{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:700}th,td{padding:1.5mm 0;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{font-size:9px}th:first-child,td:first-child{width:43%;padding-right:1mm;font-size:9px}th:nth-child(2),td.qty{width:17%;text-align:center;white-space:nowrap}th:last-child,td.price{width:40%;padding-right:32px;text-align:right;white-space:nowrap}.totals{line-height:1.6;font-weight:700}.charge-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:1mm;padding-right:14mm}.charge-row>span:last-child{text-align:right;white-space:nowrap}.grand{margin-top:1mm;border-top:1px dashed #777;padding-top:1mm;font-size:12px;font-weight:900}.thanks{margin-top:4mm;text-align:center;font-weight:700;line-height:1.5}
+  </style></head><body><main class="receipt"><img class="logo" src="${window.location.origin}/bilal-broast-logo.png" alt="Bilal Broast"><div class="store-info"><div>Shop No. 12, New Town</div><div class="store-phone">Phone: 03314919145</div></div><div class="rule"></div><div class="meta"><strong>Online Order</strong><br>Order #: ${escapeHtml(order.orderNumber || order._id || '')}<br>Date: ${createdAt.toLocaleDateString('en-GB')} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}<br>Customer: ${escapeHtml(customer.name)}<br>Contact: ${escapeHtml(customer.phone)}<br>Address: ${escapeHtml(customer.address)}<br>Payment: ${escapeHtml(payment)}</div><div class="rule"></div><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead><tbody>${rows}</tbody></table><div class="rule"></div><div class="totals"><div class="charge-row"><span>Subtotal</span><span>${subtotal.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row"><span>Delivery charges</span><span>${deliveryCharges.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row grand"><span>Total Due</span><span>${totalDue.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div></div><div class="rule"></div><div class="thanks">Thank You For Choosing Bilal Broast<br>Visit Again!</div></main></body></html>`
 }
 
-async function printOrder(order: SavedOrder, customer: Customer, payment: string, printWindow: Window) {
+async function printOrder(order: SavedOrder, customer: Customer, payment: string, deliveryCharges: number, printWindow: Window) {
   printWindow.document.open()
-  printWindow.document.write(receiptHtml(order, customer, payment))
+  printWindow.document.write(receiptHtml(order, customer, payment, deliveryCharges))
   printWindow.document.close()
   const logo = printWindow.document.querySelector<HTMLImageElement>('.logo')
   if (logo) await Promise.race([logo.decode().catch(() => undefined), new Promise<void>((resolve) => window.setTimeout(resolve, 1200))])
@@ -90,6 +92,7 @@ export default function Home() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [customerId, setCustomerId] = useState('')
   const [payment, setPayment] = useState('Cash')
+  const [deliveryChargesInput, setDeliveryChargesInput] = useState('')
   const [category, setCategory] = useState('All Items')
   const [menuSearch, setMenuSearch] = useState('')
   const [customerSearch, setCustomerSearch] = useState('')
@@ -172,6 +175,9 @@ export default function Home() {
   const shownProducts = useMemo(() => products.filter((item) => (category === 'All Items' || item.category === category) && item.name.toLowerCase().includes(menuSearch.trim().toLowerCase())), [products, category, menuSearch])
   const selectedCustomer = customers.find((customer) => customer.id === customerId) || null
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const deliveryCharges = Number(deliveryChargesInput)
+  const hasValidDeliveryCharges = deliveryChargesInput.trim() !== '' && Number.isFinite(deliveryCharges) && deliveryCharges >= 0
+  const totalDue = total + (hasValidDeliveryCharges ? deliveryCharges : 0)
   const visibleOrders = (orders || []).filter((order) => (order.customerName || '').toLowerCase().includes(ordersNameFilter.trim().toLowerCase()))
   const shownCustomers = customers.filter((customer) => customer.name.toLowerCase().includes(customerSearch.trim().toLowerCase()))
   const directoryCustomers = customers.filter((customer) => `${customer.name} ${customer.phone} ${customer.address}`.toLowerCase().includes(customerFilter.trim().toLowerCase()))
@@ -237,6 +243,10 @@ export default function Home() {
 
   async function finishOrder() {
     if (saving || cart.length === 0) return
+    if (!hasValidDeliveryCharges) {
+      setOrderError('Enter valid delivery charges before completing this order.')
+      return
+    }
     if (!selectedCustomer) {
       setOrderError('Select a customer before completing this order.')
       setDropdownOpen(true)
@@ -256,15 +266,17 @@ export default function Home() {
           items: cart.map((item) => ({ productId: item.slug || item.id, quantity: item.quantity })),
           paymentMethod: payment === 'Cash' ? 'cash' : 'online',
           customerName: selectedCustomer.name,
+          deliveryCharges,
           isCallOrder: true,
         }),
       })
       const payload = await response.json()
       const order: SavedOrder | undefined = payload?.data?.order ?? payload?.data
       if (!response.ok || payload?.success === false || !order || Array.isArray(order)) throw new Error(payload?.message || 'The backend did not confirm this order.')
-      if (printWindow) await printOrder(order, selectedCustomer, payment, printWindow)
+      if (printWindow) await printOrder({ ...order, deliveryCharges }, selectedCustomer, payment, deliveryCharges, printWindow)
       else setOrderError('Order saved. Allow pop-ups to print the receipt.')
       setCart([])
+      setDeliveryChargesInput('')
     } catch (error) {
       printWindow?.close()
       setOrderError(error instanceof Error ? error.message : 'Could not save this order.')
@@ -294,7 +306,8 @@ export default function Home() {
               {selectedCustomer && <div className="selected-customer-detail"><span>{selectedCustomer.phone}</span><span>{selectedCustomer.address}</span></div>}
             </div>
             <div className="payment-block"><div className="picker-label-row"><span>Payment method</span></div><div className="payment-options">{paymentMethods.map(({ label, icon: Icon }) => <button className={payment === label ? 'payment-option selected' : 'payment-option'} key={label} onClick={() => setPayment(label)}><Icon size={18} /><span>{label}</span></button>)}</div></div>
-            <div className="totals-block"><div><span>Subtotal</span><strong>{money(total)}</strong></div><div className="total-due"><span>Total due</span><strong>{money(total)}</strong></div></div>{orderError && <p className="inline-error" role="alert">{orderError}</p>}<button className="complete-button" disabled={!cart.length || saving} onClick={() => void finishOrder()}><Check size={18} />{saving ? 'Saving orderâ€¦' : 'Order done'}</button><p className="checkout-note">Choose the customer before completing this order.</p>
+            <label className="delivery-charge-field" htmlFor="delivery-charges"><span>Delivery charges</span><div><span>Rs.</span><input id="delivery-charges" min="0" placeholder="Enter amount" required step="0.01" type="number" value={deliveryChargesInput} onChange={(event) => { setDeliveryChargesInput(event.target.value); setOrderError('') }} /></div></label>
+            <div className="totals-block"><div><span>Subtotal</span><strong>{money(total)}</strong></div><div><span>Delivery charges</span><strong>{hasValidDeliveryCharges ? money(deliveryCharges) : '—'}</strong></div><div className="total-due"><span>Total due</span><strong>{money(totalDue)}</strong></div></div>{orderError && <p className="inline-error" role="alert">{orderError}</p>}<button className="complete-button" disabled={!cart.length || saving || !hasValidDeliveryCharges} onClick={() => void finishOrder()}><Check size={18} />{saving ? 'Saving orderâ€¦' : 'Order done'}</button><p className="checkout-note">Enter delivery charges and choose a customer before completing this order.</p>
           </aside>
         </div>}
 

@@ -105,6 +105,10 @@ button:disabled { cursor: not-allowed; }
 .payment-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .payment-option { display: flex; min-height: 57px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1px solid #e2e7e0; border-radius: 5px; background: #fafbf9; color: #586159; font-size: 9px; font-weight: 700; }
 .payment-option.selected { border-color: #60a96b; background: #eff7ed; color: #276e34; }
+.delivery-charge-field { display: flex; flex-direction: column; gap: 7px; margin-top: 16px; color: #465148; font-size: 11px; font-weight: 750; }
+.delivery-charge-field > div { display: flex; height: 40px; align-items: center; gap: 8px; border: 1px solid #dfe5dd; border-radius: 5px; padding: 0 10px; background: #fff; color: #778078; font-size: 11px; }
+.delivery-charge-field > div:focus-within { border-color: #71af79; box-shadow: 0 0 0 3px #268b3918; }
+.delivery-charge-field input { width: 100%; border: 0; outline: 0; color: #202921; font-size: 12px; font-weight: 600; }
 .totals-block { margin-top: 17px; border-top: 1px solid var(--line); padding-top: 12px; }
 .totals-block > div { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; color: #6d776e; font-size: 11px; }
 .totals-block strong { color: #242d25; }
