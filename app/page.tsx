@@ -31,6 +31,8 @@ type Product = {
   slug: string
   name: string
   price: number
+  onlineOrderPrice?: number
+  websitePrice?: number
   image: string
   category: string
   description: string
@@ -139,11 +141,15 @@ export default function Home() {
         const item = entry && typeof entry === 'object' ? entry as Record<string, unknown> : {}
         const productCategory = item.category && typeof item.category === 'object' ? item.category as Record<string, unknown> : {}
         const id = String(item._id || item.id || '')
+        const websitePrice = Number(item.websitePrice ?? item.price ?? 0)
+        const onlineOrderPrice = Number(item.onlineOrderPrice ?? websitePrice)
         return {
           id,
           slug: String(item.slug || item._id || item.id || ''),
           name: String(item.name || 'Menu item'),
-          price: Number(item.price || 0),
+          price: onlineOrderPrice,
+          onlineOrderPrice,
+          websitePrice,
           image: String(item.image || productCategory.image || FALLBACK_IMAGE),
           category: String(productCategory.name || 'General'),
           description: String(item.description || 'Freshly prepared from our kitchen.'),
@@ -352,7 +358,7 @@ function ProductGrid({ products, loading, error, addProduct }: { products: Produ
   if (loading) return <EmptyState title="Loading live menuâ€¦" />
   if (error) return <EmptyState title={error} />
   if (products.length === 0) return <EmptyState title="No menu items match this filter" />
-  return <div className="product-grid">{products.map((product) => <button className="product-card" key={product.id} onClick={() => addProduct(product)}><div className="product-photo"><img alt={product.name} loading="lazy" src={product.image || FALLBACK_IMAGE} /><span className="add-product"><Plus size={17} /></span></div><div className="product-info"><span className="product-category">{product.category}</span><strong>{product.name}</strong><span className="product-price">{money(product.price)}</span></div></button>)}</div>
+  return <div className="product-grid">{products.map((product) => <button className="product-card" key={product.id} onClick={() => addProduct(product)}><div className="product-photo"><img alt={product.name} loading="lazy" src={product.image || FALLBACK_IMAGE} /><span className="add-product"><Plus size={17} /></span></div><div className="product-info"><span className="product-category">{product.category}</span><strong>{product.name}</strong><p className="product-description">{product.description || 'Freshly prepared from our kitchen.'}</p><span className="product-price">{money(product.price)}</span></div></button>)}</div>
 }
 
 function SectionHeading({ eyebrow, title, count, action }: { eyebrow: string; title: string; count?: number; action?: ReactNode }) {
