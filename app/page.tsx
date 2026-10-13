@@ -1,8 +1,9 @@
 ﻿'use client'
 
+import Image from 'next/image'
 import {
   Bell, CalendarDays, Check, ChevronDown, CircleDollarSign,
-  ClipboardList, CreditCard, Home as HomeIcon, LogOut, Minus, Plus, Search,
+  ClipboardList, CreditCard, Home as HomeIcon, LogOut, Minus, Plus, Search, Trash2,
   ShoppingBag, UserPlus, Users, WalletCards, X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
@@ -67,7 +68,7 @@ function receiptHtml(order: SavedOrder, customer: Customer, payment: string, del
   const rows = items.map((item) => `<tr><td>${escapeHtml(item.nameSnapshot || 'Item')}</td><td class="qty">x${Number(item.quantity || 0)}</td><td class="price">${Number(item.lineTotal ?? Number(item.priceSnapshot || 0) * Number(item.quantity || 0)).toLocaleString('en-PK')}</td></tr>`).join('')
   return `<!doctype html><html><head><meta charset="utf-8"><title>Order ${escapeHtml(order.orderNumber || '')}</title><style>
     @page{size:58mm auto;margin:0}*{box-sizing:border-box}html,body{width:58mm;margin:0;background:#fff;color:#111;font:10px Arial,sans-serif}.receipt{width:50mm;margin:0 auto;padding:4mm 1mm 6mm}.logo{display:block;width:44mm;max-height:27mm;object-fit:contain;margin:0 auto 1mm}.store-info{text-align:center;font-size:9px;line-height:1.45;margin-bottom:3mm}.store-phone{font-weight:700;letter-spacing:.2px}.rule{border-top:1px solid #111;margin:2.5mm 0}.meta{line-height:1.55;overflow-wrap:anywhere}.meta strong{font-size:12px}table{width:100%;border-collapse:collapse;table-layout:fixed;font-weight:700}th,td{padding:1.5mm 0;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{font-size:9px}th:first-child,td:first-child{width:43%;padding-right:1mm;font-size:9px}th:nth-child(2),td.qty{width:17%;text-align:center;white-space:nowrap}th:last-child,td.price{width:40%;padding-right:32px;text-align:right;white-space:nowrap}.totals{line-height:1.6;font-weight:700}.charge-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;column-gap:1mm;padding-right:14mm}.charge-row>span:last-child{text-align:right;white-space:nowrap}.grand{margin-top:1mm;border-top:1px dashed #777;padding-top:1mm;font-size:12px;font-weight:900}.thanks{margin-top:4mm;text-align:center;font-weight:700;line-height:1.5}
-  </style></head><body><main class="receipt"><img class="logo" src="${window.location.origin}/bilal-broast-logo.png" alt="Bilal Broast"><div class="store-info"><div>Shop No. 12, New Town</div><div class="store-phone">Phone: 03314919145</div></div><div class="rule"></div><div class="meta"><strong>Online Order</strong><br>Order #: ${escapeHtml(order.orderNumber || order._id || '')}<br>Date: ${createdAt.toLocaleDateString('en-GB')} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}<br>Customer: ${escapeHtml(customer.name)}<br>Contact: ${escapeHtml(customer.phone)}<br>Address: ${escapeHtml(customer.address)}<br>Payment: ${escapeHtml(payment)}</div><div class="rule"></div><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead><tbody>${rows}</tbody></table><div class="rule"></div><div class="totals"><div class="charge-row"><span>Subtotal</span><span>${subtotal.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row"><span>Delivery charges</span><span>${deliveryCharges.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row grand"><span>Total Due</span><span>${totalDue.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div></div><div class="rule"></div><div class="thanks">Thank You For Choosing Bilal Broast<br>Visit Again!</div></main></body></html>`
+  </style></head><body><main class="receipt"><img class="logo" src="${window.location.origin}/bilal-broast-logo.png" alt="Bilal Broast"><div class="store-info"><div>Shop No. 12, New Town</div><div class="store-phone">Phone: 03314919145</div></div><div class="rule"></div><div class="meta"><strong>Online Order</strong><br>Date: ${createdAt.toLocaleDateString('en-GB')} ${createdAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}<br>Customer: ${escapeHtml(customer.name)}<br>Contact: ${escapeHtml(customer.phone)}<br>Address: ${escapeHtml(customer.address)}<br>Payment: ${escapeHtml(payment)}</div><div class="rule"></div><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead><tbody>${rows}</tbody></table><div class="rule"></div><div class="totals"><div class="charge-row"><span>Subtotal</span><span>${subtotal.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row"><span>Delivery charges</span><span>${deliveryCharges.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div><div class="charge-row grand"><span>Total Due</span><span>${totalDue.toLocaleString('en-PK', { maximumFractionDigits: 2 })}</span></div></div><div class="rule"></div><div class="thanks">Thank You For Choosing Bilal Broast<br>Visit Again!</div></main></body></html>`
 }
 
 async function printOrder(order: SavedOrder, customer: Customer, payment: string, deliveryCharges: number, printWindow: Window) {
@@ -101,6 +102,8 @@ export default function Home() {
   const [customerModalOpen, setCustomerModalOpen] = useState(false)
   const [customerForm, setCustomerForm] = useState({ name: '', phone: '', address: '' })
   const [customerError, setCustomerError] = useState('')
+  const [customerActionError, setCustomerActionError] = useState('')
+  const [deletingCustomerId, setDeletingCustomerId] = useState('')
   const [productError, setProductError] = useState('')
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [orderError, setOrderError] = useState('')
@@ -179,7 +182,10 @@ export default function Home() {
   const hasValidDeliveryCharges = deliveryChargesInput.trim() !== '' && Number.isFinite(deliveryCharges) && deliveryCharges >= 0
   const totalDue = total + (hasValidDeliveryCharges ? deliveryCharges : 0)
   const visibleOrders = (orders || []).filter((order) => (order.customerName || '').toLowerCase().includes(ordersNameFilter.trim().toLowerCase()))
-  const shownCustomers = customers.filter((customer) => customer.name.toLowerCase().includes(customerSearch.trim().toLowerCase()))
+  const customerQuery = customerSearch.trim().toLowerCase()
+  const shownCustomers = customers.filter((customer) =>
+    `${customer.name} ${customer.phone} ${customer.address}`.toLowerCase().includes(customerQuery),
+  )
   const directoryCustomers = customers.filter((customer) => `${customer.name} ${customer.phone} ${customer.address}`.toLowerCase().includes(customerFilter.trim().toLowerCase()))
 
   function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -226,6 +232,26 @@ export default function Home() {
       setCustomerModalOpen(false)
     } catch (error) {
       setCustomerError(error instanceof Error ? error.message : 'Could not save customer.')
+    }
+  }
+
+  async function deleteCustomer(customer: Customer) {
+    if (deletingCustomerId || !window.confirm(`Delete ${customer.name}? This action cannot be undone.`)) return
+
+    setDeletingCustomerId(customer.id)
+    setCustomerActionError('')
+    try {
+      const response = await fetch(`${CUSTOMERS_URL}/${encodeURIComponent(customer.id)}`, { method: 'DELETE' })
+      const payload: { success?: boolean; message?: string } = await response.json()
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.message || 'Could not delete customer.')
+      }
+      setCustomers((current) => current.filter((entry) => entry.id !== customer.id))
+      setCustomerId((current) => current === customer.id ? '' : current)
+    } catch (error) {
+      setCustomerActionError(error instanceof Error ? error.message : 'Could not delete customer.')
+    } finally {
+      setDeletingCustomerId('')
     }
   }
 
@@ -289,7 +315,7 @@ export default function Home() {
 
   return <main className="app-shell">
     <aside className="sidebar">
-      <div className="brand-lockup"><span>Bilal</span><strong>Broast</strong><small>ONLINE ORDERING</small></div>
+      <div className="brand-lockup"><Image alt="Bilal Broast" className="brand-logo" height={661} priority src="/bilal-broast-logo-color.png" width={1000} /><small>ONLINE ORDERING</small></div>
       <nav className="side-nav" aria-label="Main navigation">{navigation.map(({ label, icon: Icon }) => <button className={section === label ? 'nav-item active' : 'nav-item'} key={label} onClick={() => { if (label === 'Orders') { setOrders(null); setOrdersError('') } setSection(label) }}><Icon size={21} />{label}</button>)}</nav>
       <div className="sidebar-bottom"><span className="status-dot" /> Live ordering <button aria-label="Sign out" title="Sign out" onClick={() => setIsAuthenticated(false)}><LogOut size={18} /></button></div>
     </aside>
@@ -302,7 +328,7 @@ export default function Home() {
           <section className="catalog-panel"><div className="catalog-title"><div><p className="eyebrow">TODAYâ€™S MENU</p><h2>Choose your items</h2></div><span className="live-label"><i /> MENU LIVE</span></div><div className="category-strip">{categories.map((item) => <button className={category === item ? 'category-chip selected' : 'category-chip'} key={item} onClick={() => setCategory(item)}>{item}</button>)}</div><ProductGrid products={shownProducts} loading={loadingProducts} error={productError} addProduct={addToCart} /></section>
           <aside className="order-panel"><div className="order-panel-heading"><div><p className="eyebrow">CURRENT SALE</p><h2>Order panel</h2></div><span className="walkin-tag">ONLINE</span></div><div className="cart-column-head"><span>Item</span><span>Price</span><span>Qty</span></div><div className="cart-lines">{cart.map((item) => <div className="cart-line" key={item.id}><span className="cart-item-name">{item.name}<small>{item.category}</small></span><span>{money(item.price)}</span><div className="quantity-control"><button aria-label={`Remove one ${item.name}`} onClick={() => adjustItem(item.id, -1)}><Minus size={13} /></button><strong>{item.quantity}</strong><button aria-label={`Add one ${item.name}`} onClick={() => adjustItem(item.id, 1)}><Plus size={13} /></button></div></div>)}{cart.length === 0 && <div className="cart-empty"><ShoppingBag size={22} /><span>Your order is empty</span><small>Select items from the menu</small></div>}</div>
             <div className="customer-picker-wrap"><div className="picker-label-row"><label htmlFor="customer-picker">Customer</label><button className="text-button" onClick={() => setCustomerModalOpen(true)}><UserPlus size={15} /> Add new</button></div><button aria-expanded={dropdownOpen} aria-haspopup="listbox" className="customer-picker" id="customer-picker" onClick={() => setDropdownOpen(!dropdownOpen)}><span>{selectedCustomer ? <><strong>{selectedCustomer.name}</strong><small>{selectedCustomer.address}</small></> : <span className="placeholder">Select a customerâ€¦</span>}</span><ChevronDown size={17} /></button>
-              {dropdownOpen && <div className="customer-dropdown"><label className="dropdown-search"><Search size={16} /><input autoFocus placeholder="Search customer name" value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} /></label><div className="customer-options" role="listbox" aria-label="Saved customers">{shownCustomers.map((customer) => <button aria-selected={customerId === customer.id} className="customer-option" key={customer.id} onClick={() => { setCustomerId(customer.id); setDropdownOpen(false); setCustomerSearch(''); setOrderError('') }} role="option"><strong>{customer.name}</strong><span>{customer.address}</span></button>)}{shownCustomers.length === 0 && <p className="no-customer-match">No matching customers</p>}</div><button className="dropdown-add" onClick={() => { setDropdownOpen(false); setCustomerModalOpen(true) }}><UserPlus size={16} /> Add customer</button></div>}
+              {dropdownOpen && <div className="customer-dropdown"><label className="dropdown-search"><Search size={16} /><input autoFocus placeholder="Search name, contact, or address" value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} /></label><div className="customer-options" role="listbox" aria-label="Saved customers">{shownCustomers.map((customer) => <button aria-selected={customerId === customer.id} className="customer-option" key={customer.id} onClick={() => { setCustomerId(customer.id); setDropdownOpen(false); setCustomerSearch(''); setOrderError('') }} role="option"><strong>{customer.name}</strong><span>{customer.address}</span></button>)}{shownCustomers.length === 0 && <p className="no-customer-match">No matching customers</p>}</div><button className="dropdown-add" onClick={() => { setDropdownOpen(false); setCustomerModalOpen(true) }}><UserPlus size={16} /> Add customer</button></div>}
               {selectedCustomer && <div className="selected-customer-detail"><span>{selectedCustomer.phone}</span><span>{selectedCustomer.address}</span></div>}
             </div>
             <div className="payment-block"><div className="picker-label-row"><span>Payment method</span></div><div className="payment-options">{paymentMethods.map(({ label, icon: Icon }) => <button className={payment === label ? 'payment-option selected' : 'payment-option'} key={label} onClick={() => setPayment(label)}><Icon size={18} /><span>{label}</span></button>)}</div></div>
@@ -311,7 +337,7 @@ export default function Home() {
           </aside>
         </div>}
 
-        {section === 'Customers' && <section className="content-section"><SectionHeading eyebrow="CUSTOMER DIRECTORY" title="Customers" count={customers.length} action={<button className="primary-button" onClick={() => setCustomerModalOpen(true)}><UserPlus size={17} /> Add customer</button>} /><label className="directory-search"><Search size={17} /><input placeholder="Find by name, contact or address" value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} /></label><div className="table-wrap"><table className="data-table"><thead><tr><th>Customer</th><th>Contact</th><th>Delivery address</th><th /></tr></thead><tbody>{directoryCustomers.map((customer) => <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.phone}</td><td>{customer.address}</td><td><button className="text-button" onClick={() => { setCustomerId(customer.id); setSection('Home') }}>Select for order</button></td></tr>)}</tbody></table>{directoryCustomers.length === 0 && <EmptyState title="No customers found" action={<button className="text-button" onClick={() => setCustomerModalOpen(true)}>Add a customer</button>} />}</div></section>}
+        {section === 'Customers' && <section className="content-section"><SectionHeading eyebrow="CUSTOMER DIRECTORY" title="Customers" count={customers.length} action={<button className="primary-button" onClick={() => setCustomerModalOpen(true)}><UserPlus size={17} /> Add customer</button>} /><label className="directory-search"><Search size={17} /><input placeholder="Find by name, contact or address" value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} /></label>{customerActionError && <p className="inline-error" role="alert">{customerActionError}</p>}<div className="table-wrap"><table className="data-table"><thead><tr><th>Customer</th><th>Contact</th><th>Delivery address</th><th>Actions</th></tr></thead><tbody>{directoryCustomers.map((customer) => <tr key={customer.id}><td><strong>{customer.name}</strong></td><td>{customer.phone}</td><td>{customer.address}</td><td><div className="customer-actions"><button className="text-button" onClick={() => { setCustomerId(customer.id); setSection('Home') }}>Select for order</button><button aria-label={`Delete ${customer.name}`} className="customer-delete-button" disabled={Boolean(deletingCustomerId)} onClick={() => void deleteCustomer(customer)}><Trash2 size={14} />{deletingCustomerId === customer.id ? 'Deleting…' : 'Delete'}</button></div></td></tr>)}</tbody></table>{directoryCustomers.length === 0 && <EmptyState title="No customers found" action={<button className="text-button" onClick={() => setCustomerModalOpen(true)}>Add a customer</button>} />}</div></section>}
 
         {section === 'Orders' && <section className="content-section"><SectionHeading eyebrow="ONLINE ORDERS" title="Saved orders" action={<div className="orders-filters"><label className="directory-search"><Search size={17} /><input aria-label="Filter orders by customer name" placeholder="Filter customer name" value={ordersNameFilter} onChange={(event) => setOrdersNameFilter(event.target.value)} /></label><label className="date-filter"><CalendarDays size={17} /><input aria-label="Filter orders by date" type="date" value={ordersDate} onChange={(event) => { setOrders(null); setOrdersError(''); setOrdersDate(event.target.value) }} /></label></div>} /><div className="table-wrap"><table className="data-table"><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Placed</th><th>Total</th><th>Status</th></tr></thead><tbody>{visibleOrders.map((order, index) => <tr key={order._id || order.orderNumber || index}><td><strong>{order.orderNumber || order._id}</strong></td><td>{order.customerName || '—'}</td><td>{(order.items || []).map((item) => `${item.nameSnapshot || 'Item'} ×${item.quantity || 0}`).join(', ')}</td><td>{order.createdAt ? new Date(order.createdAt).toLocaleString() : '—'}</td><td><strong>{money(Number(order.grandTotal || 0))}</strong></td><td><span className="status-pill">{order.orderStatus || 'delivered'}</span></td></tr>)}</tbody></table>{orders === null && <EmptyState title="Loading orders…" />}{ordersError && <EmptyState title={ordersError} />}{orders !== null && !ordersError && visibleOrders.length === 0 && <EmptyState title="No online orders match these filters" />}</div></section>}
 
